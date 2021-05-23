@@ -1,7 +1,7 @@
 MusicHax for Lethal League Blaze, a mod to swap music easily.
 Glomzubuk rewrote pretty much all of the code to make this Mod Manager compatible.
 
-~~Program.cs is the file for compiling the ASMRewriter.exe, the other two files are for the mod .dll itself.
+Program.cs is the file for compiling the ASMRewriter.exe, the other two files are for the mod .dll itself.
 Refer to the guide for creating mods if you would like to compile it for yourself: https://docs.google.com/document/d/18CHOzfFKfhW9Ch-zbERdJ5kGqhePSTJ3D3EEeA6R1-Q/edit
 
 To do list:
