@@ -142,7 +142,12 @@ namespace ASMRewriter
                 {
                     if (method.Name == _injectMethod)
                     {
-                        if (i == _entryNr) gameMethod = method;
+                        if (i == _entryNr)
+                        {
+                            Console.WriteLine("Selected method to inject into: " + method.FullName);
+                            gameMethod = method;
+                            break;
+                        }
                         else i++;
                     }
                 }
@@ -167,7 +172,7 @@ namespace ASMRewriter
                 {
                     foreach (MethodDefinition method in type.Methods)
                     {
-                        Console.WriteLine(method.Name);
+                        //Console.WriteLine(method.Name);
                         if (method.Name == _modMethod)
                         {
                             modMethod = method;
@@ -182,8 +187,16 @@ namespace ASMRewriter
                 return;
             }
 
-            InjectionDefinition injector = new InjectionDefinition(gameMethod, modMethod, _flag);
-            injector.Inject();
+            try
+            {
+                InjectionDefinition injector = new InjectionDefinition(gameMethod, modMethod, _flag);
+                injector.Inject(0, null, InjectDirection.Before);
+                Console.WriteLine("Injection into " + gameMethod.ToString() + " OK ");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
     }
 }
