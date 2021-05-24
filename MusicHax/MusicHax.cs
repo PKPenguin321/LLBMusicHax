@@ -13,7 +13,7 @@ namespace MusicHax
     public class MusicHax : MonoBehaviour
     {
         #region modinfos
-        public const string modVersion = "v2.0";
+        public const string modVersion = "v2.1";
         public const string repositoryOwner = "PKPenguin321";
         public const string repositoryName = "LLBMusicHax";
         #endregion
