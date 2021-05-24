@@ -175,5 +175,10 @@ namespace MusicHax
                 return null;
             }
         }
+
+        private const string modVersion = "v2.0";
+        private const string repositoryOwner = "PKPenguin321";
+        private const string repositoryName = "LLBMusicHax";
+
     }
 }
