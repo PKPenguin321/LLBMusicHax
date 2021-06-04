@@ -12,9 +12,17 @@ namespace MusicHax
 {
     public class MusicHax : MonoBehaviour
     {
+        #region modinfos
+        public const string modVersion = "v2.1";
+        public const string repositoryOwner = "PKPenguin321";
+        public const string repositoryName = "LLBMusicHax";
+        #endregion
+
         public static MusicHax instance = null;
+        private static ModMenuIntegration MMI = null;
         private static readonly string MHResourcesPath = Path.Combine(Path.Combine(Application.dataPath, "Managed"), "MusicHaxResources");
         private static Dictionary<string, List<AudioClip>> musicCache = new Dictionary<string, List<AudioClip>>();
+
 
         public static void Initialize()
         {
@@ -22,15 +30,34 @@ namespace MusicHax
             instance = gameObject.AddComponent<MusicHax>();
             DontDestroyOnLoad(gameObject);
         }
+        #region configs
+        private static bool PreloadingEnabled
+        {
+            get
+            {
+                if (MMI != null)
+                    return MMI.GetTrueFalse("(bool)enablePreloading");
+                return false;
+            }
+        }
+        #endregion
 
         private bool loadingExternalMusicFiles = false;
-        private readonly string loadingText = $"MusicHax is loading External Songs...";
+        private const string loadingText = "MusicHax is loading External Songs...";
 
-        // Awake is called once when both the game libs and the plug-in are loaded
-        void Awake()
+        void Update()
         {
-            Directory.CreateDirectory(MHResourcesPath);
-            this.StartCoroutine(LoadMusics());
+            if (MMI == null) { MMI = gameObject.AddComponent<ModMenuIntegration>(); }
+            else
+            {
+                if (musicCache.Count == 0 && PreloadingEnabled)
+                    this.StartCoroutine(LoadMusics());
+            }
+
+            if (DNPFJHMAIBP.AKGAOAEJ != null && DNPFJHMAIBP.AKGAOAEJ.musicAssetLinks != null)
+            {
+                CreateMusicDirectories();
+            }
         }
 
         private void OnGUI()
@@ -47,7 +74,7 @@ namespace MusicHax
                 var sX = Screen.width / 2;
                 var sY = UIScreen.GetResolutionFromConfig().height / 3;
                 GUI.skin.label.alignment = TextAnchor.MiddleCenter;
-                GUI.Label(new Rect(0, sY + 50, Screen.width, sY), loadingText);
+                GUI.Label(new Rect(0, sY-25, Screen.width, sY-75), loadingText);
                 GUI.skin.label.alignment = TextAnchor.MiddleLeft;
             }
             GUI.contentColor = OriginalColor;
@@ -117,6 +144,19 @@ namespace MusicHax
             Directory.CreateDirectory(Path.Combine(MHResourcesPath, clipName));
         }
 
+        private bool directoryAlreadyCreated = false;
+        public void CreateMusicDirectories()
+        {
+            if (directoryAlreadyCreated) return;
+            for (int i = 1; i < (int)AudioTrack.MAX; i++)
+            {
+                if (i == 13) continue;
+                string directoryname = DNPFJHMAIBP.AKGAOAEJ.musicAssetLinks.GetMusicAsset((AudioTrack)i).audioClipName;
+                Debug.Log("Creating directory: " + directoryname);
+                Directory.CreateDirectory(Path.Combine(MHResourcesPath, directoryname));
+            }
+            directoryAlreadyCreated = true;
+        }
 
         private static AudioClip GetClipNow(string musicFilePath)
         {
@@ -154,7 +194,7 @@ namespace MusicHax
         public static AudioClip GetAudioClipFor(string clipName)
         {
             Debug.Log("MusicHax: Got asked for a clip named: \"" + clipName + "\"");
-            if (musicCache.ContainsKey(clipName) && musicCache[clipName].Count > 0)
+            if (PreloadingEnabled && musicCache.ContainsKey(clipName) && musicCache[clipName].Count > 0)
             {
                 return musicCache[clipName][UnityEngine.Random.Range(0, musicCache[clipName].Count)];
             }
@@ -175,10 +215,5 @@ namespace MusicHax
                 return null;
             }
         }
-
-        private const string modVersion = "v2.0";
-        private const string repositoryOwner = "PKPenguin321";
-        private const string repositoryName = "LLBMusicHax";
-
     }
 }
