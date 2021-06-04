@@ -35,8 +35,8 @@ namespace MusicHax
         {
             get
             {
-                /*if (MMI != null)
-                    return MMI.GetTrueFalse("(bool)enablePreloading");*/
+                if (MMI != null)
+                    return MMI.GetTrueFalse("(bool)enablePreloading");
                 return true;
             }
         }
@@ -48,7 +48,7 @@ namespace MusicHax
 
         void Update()
         {
-            if (false && MMI == null) { MMI = gameObject.AddComponent<ModMenuIntegration>(); }
+            if (MMI == null) { MMI = gameObject.AddComponent<ModMenuIntegration>(); }
             else
             {
                 if (PreloadingEnabled)
@@ -175,11 +175,6 @@ namespace MusicHax
                 Directory.CreateDirectory(Path.Combine(MHResourcesPath, directoryname));
             }
             directoryAlreadyCreated = true;
-        }
-
-        private static AudioClip GetClipNow(string musicFilePath)
-        {
-            return AudioUtils.GetClipSynchronously(musicFilePath);
         }
 
         public static AudioClip GetMusicClip(string clipName)
