@@ -1,10 +1,6 @@
 ﻿using System;
 using System.IO;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
-using UnityEngine.Networking;
 using LLHandlers;
 using LLScreen;
 
@@ -21,7 +17,10 @@ namespace MusicHax
         public static MusicHax instance = null;
         private static ModMenuIntegration MMI = null;
         private static readonly string MHResourcesPath = Path.Combine(Path.Combine(Application.dataPath, "Managed"), "MusicHaxResources");
-        private static Dictionary<string, List<AudioClip>> musicCache = new Dictionary<string, List<AudioClip>>();
+
+        private static AudioCache musicCache = new AudioCache();
+        private static AudioCache sfxCache = new AudioCache();
+        private static AudioCache voiceCache = new AudioCache();
 
 
         public static void Initialize()
@@ -30,6 +29,7 @@ namespace MusicHax
             instance = gameObject.AddComponent<MusicHax>();
             DontDestroyOnLoad(gameObject);
         }
+
         #region configs
         private static bool PreloadingEnabled
         {
@@ -37,21 +37,35 @@ namespace MusicHax
             {
                 if (MMI != null)
                     return MMI.GetTrueFalse("(bool)enablePreloading");
-                return false;
+                return true;
             }
         }
         #endregion
 
         private bool loadingExternalMusicFiles = false;
-        private const string loadingText = "MusicHax is loading External Songs...";
+        private bool didLoad = false;
+        private const string loadingText = "MusicHax is loading External Sounds...";
 
         void Update()
         {
             if (MMI == null) { MMI = gameObject.AddComponent<ModMenuIntegration>(); }
             else
             {
-                if (musicCache.Count == 0 && PreloadingEnabled)
-                    this.StartCoroutine(LoadMusics());
+                if (PreloadingEnabled)
+                {
+                    if (this.didLoad == false)
+                    {
+                        loadingExternalMusicFiles = true;
+                        didLoad = true;
+                        LoadMusics();
+                        LoadSfx();
+                        LoadVoice();
+                    } else if (!musicCache.IsLoading && !sfxCache.IsLoading && !voiceCache.IsLoading)
+                    {
+                        UIScreen.SetLoadingScreen(false);
+                        loadingExternalMusicFiles = false;
+                    }
+                }
             }
 
             if (DNPFJHMAIBP.AKGAOAEJ != null && DNPFJHMAIBP.AKGAOAEJ.musicAssetLinks != null)
@@ -83,56 +97,61 @@ namespace MusicHax
 
         }
 
-        private IEnumerator LoadMusics()
+        private void LoadMusics()
         {
-            musicCache.Clear();
-            this.loadingExternalMusicFiles = true;
             UIScreen.SetLoadingScreen(true, false, false, Stage.NONE);
-            DirectoryInfo[] musicDirectories = new DirectoryInfo(MHResourcesPath).GetDirectories();
+
+            musicCache.Clear();
+
+            DirectoryInfo[] musicDirectories = Directory.CreateDirectory(Path.Combine(MHResourcesPath, "Music")).GetDirectories();
             foreach (DirectoryInfo musicDirectory in musicDirectories)
             {
-                List<AudioClip> audioClips = new List<AudioClip>();
-                FileInfo[] musicFiles = musicDirectory.GetFiles("*.ogg");
-
-                foreach (FileInfo musicFile in musicFiles)
+                foreach (AudioInfo musicInfo in AudioUtils.GetAudioInfos(musicDirectory))
                 {
-                    Debug.Log("MusicHax: Loading new " + musicDirectory.Name + " : " + musicFile.FullName);
-                    using (UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip("file://" + musicFile.FullName, AudioType.OGGVORBIS))
-                    {
-                        UnityWebRequestAsyncOperation asyncOperation = null;
-                        try
-                        {
-                            asyncOperation = uwr.SendWebRequest();
-
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogError("MusicHax: Exception caught: ");
-                            Debug.LogException(e);
-                            continue;
-                        }
-                        yield return asyncOperation;
-                        AudioClip audioClip = DownloadHandlerAudioClip.GetContent(uwr);
-
-                        if (audioClip == null)
-                        {
-                            Debug.LogError("Huh?!");
-                        }
-                        else
-                        {
-                            audioClip.name = Path.GetFileNameWithoutExtension(musicFile.FullName);
-                            audioClips.Add(audioClip);
-                        }
-                    }
+                    Debug.Log("MusicHax: Loading new " + musicDirectory.Name + " : " + musicInfo.file.FullName);
+                    musicCache.LoadClip(musicDirectory.Name, musicInfo, Path.GetFileNameWithoutExtension(musicInfo.file.FullName));
                 }
-                musicCache.Add(musicDirectory.Name, audioClips);
             }
-
-            UIScreen.SetLoadingScreen(false);
-            loadingExternalMusicFiles = false;
-            yield break;
         }
 
+        private void LoadSfx()
+        {
+            sfxCache.Clear();
+
+            DirectoryInfo[] sfxDirectories = Directory.CreateDirectory(Path.Combine(MHResourcesPath, "Sfx")).GetDirectories();
+            foreach (DirectoryInfo sfxDirectory in sfxDirectories)
+            {
+                foreach (AudioInfo sfxInfo in AudioUtils.GetAudioInfos(sfxDirectory))
+                {
+                    Debug.Log("Loading new " + sfxDirectory.Name + " : " + sfxInfo.file.FullName);
+                    sfxCache.LoadClip(sfxDirectory.Name, sfxInfo);
+                }
+            }
+        }
+
+        private static string GetVoiceCacheKey(string audioFile, Character character)
+        {
+            return character.ToString() + "_" + audioFile;
+        }
+        private void LoadVoice()
+        {
+            voiceCache.Clear();
+
+            DirectoryInfo[] charDirectories = Directory.CreateDirectory(Path.Combine(MHResourcesPath, "Voice")).GetDirectories();
+            foreach (DirectoryInfo charDirectory in charDirectories)
+            {
+                foreach (DirectoryInfo voiceDirectory in charDirectory.GetDirectories())
+                {
+                    foreach (AudioInfo voiceInfo in AudioUtils.GetAudioInfos(voiceDirectory))
+                    {
+                        Debug.Log("Loading new " + voiceDirectory.Name + " : " + voiceInfo.file.FullName);
+
+                        string cacheKey = GetVoiceCacheKey(voiceDirectory.Name, GetCharacterByName(charDirectory.Name));
+                        voiceCache.LoadClip(cacheKey, voiceInfo);
+                    }
+                }
+            }
+        }
 
         private void ReloadMusics()
         {
@@ -158,40 +177,7 @@ namespace MusicHax
             directoryAlreadyCreated = true;
         }
 
-        private static AudioClip GetClipNow(string musicFilePath)
-        {
-            Debug.Log("MusicHax: Urgent File Load: " + musicFilePath);
-            using (UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip("file://" + musicFilePath, AudioType.OGGVORBIS))
-            {
-                try
-                {
-                    uwr.SendWebRequest();
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError("MusicHax: Exception caught: ");
-                    Debug.LogException(e);
-                }
-                while (!uwr.isDone)
-                {
-                    Thread.Sleep(20);
-                }
-                AudioClip audioClip = DownloadHandlerAudioClip.GetContent(uwr);
-
-                if (audioClip == null)
-                {
-                    Debug.LogError("Huh?!");
-                }
-                else
-                {
-                    audioClip.name = Path.GetFileNameWithoutExtension(musicFilePath);
-                    return audioClip;
-                }
-            }
-            return null;
-        }
-
-        public static AudioClip GetAudioClipFor(string clipName)
+        public static AudioClip GetMusicClip(string clipName)
         {
             Debug.Log("MusicHax: Got asked for a clip named: \"" + clipName + "\"");
             if (PreloadingEnabled && musicCache.ContainsKey(clipName) && musicCache[clipName].Count > 0)
@@ -205,7 +191,7 @@ namespace MusicHax
                     string[] pathList = Directory.GetFiles(Path.Combine(MHResourcesPath, clipName));
                     if (pathList.Length > 0)
                     {
-                        return GetClipNow(pathList[UnityEngine.Random.Range(0, pathList.Length - 1)]);
+                        return AudioUtils.GetClipSynchronously(pathList[UnityEngine.Random.Range(0, pathList.Length - 1)]);
                     }
                 } catch (Exception e)
                 {
@@ -214,6 +200,46 @@ namespace MusicHax
                 }
                 return null;
             }
+        }
+
+        public static AudioClip[] GetSfxClips(string audioFile)
+        {
+            Debug.Log("MusicHax: Got asked for a sfx clip named: \"" + audioFile + "\"");
+
+            Directory.CreateDirectory(Path.Combine(Path.Combine(MHResourcesPath, "Sfx"), audioFile));
+
+            if (sfxCache.ContainsKey(audioFile) && sfxCache[audioFile].Count > 0)
+            {
+                return sfxCache[audioFile].ToArray();
+            }
+            return new AudioClip[0];
+        }
+
+        public static AudioClip[] GetVoiceClips(string audioFile, Character character)
+        {
+            Debug.Log("MusicHax: Got asked for a voice clip named: \"" + audioFile + "\" for " + character.ToString());
+
+            Directory.CreateDirectory(Path.Combine(Path.Combine(Path.Combine(MHResourcesPath, "Voice"), character.ToString()), audioFile));
+
+            string cacheKey = GetVoiceCacheKey(audioFile, character);
+            if (voiceCache.ContainsKey(cacheKey) && voiceCache[cacheKey].Count > 0)
+            {
+                return voiceCache[cacheKey].ToArray();
+            }
+            return new AudioClip[0];
+        }
+
+        public static Character GetCharacterByName(string characterName)
+        {
+            for (int i = 0; i < (int)Character._MAX_NORMAL; i++)
+            {
+                Character currentCharacter = (Character)i;
+                if (currentCharacter.ToString() == characterName)
+                {
+                    return currentCharacter;
+                }
+            }
+            return Character.NONE;
         }
     }
 }

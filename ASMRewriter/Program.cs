@@ -32,11 +32,18 @@ namespace ASMRewriter
                     new ReaderParameters { ReadWrite = true })
                 )
                 {
-                    Console.WriteLine(" Attempting inject");
+
+                    Console.WriteLine("Attempting setting fields public");
+                    asm.SetFieldPublic(aDef, "LLHandlers.SfxInfo", "isLoaded");
+                    asm.SetFieldPublic(aDef, "LLHandlers.SfxInfo", "audioFile");
+                    asm.SetFieldPublic(aDef, "LLHandlers.SfxInfo", "audioClips");
+
+                    Console.WriteLine("Attempting inject");
                     try
                     {
                         /* Here the injection method provided by asm.cs isn't enough,
                          * so i made a new one below, i' ll explain the differences there */
+                        Console.WriteLine("-- Injecting into LLHandlers.AudioHandler.PlayMusic");
                         asm.InjectCallToMethod(
                             aDef, // The LLB dll definition
                             "LLHandlers.AudioHandler", // The class you want to inject stuff in
@@ -51,6 +58,38 @@ namespace ASMRewriter
                                                * You can still check the code, which is well documented, here: 
                                                * https://github.com/ghorsington/Mono.Cecil.Inject/blob/master/Mono.Cecil.Inject/InjectFlags.cs */
                             InjectFlags.PassParametersRef
+                        );
+                        Console.WriteLine("-- Injecting into LLHandlers.SfxInfo.Preload");
+                        asm.InjectCallToMethod(
+                            aDef, // The LLB dll definition
+                            "LLHandlers.SfxInfo", // The class you want to inject stuff in
+                            "Preload", // The name of method you want to inject into
+                                         /* The ID of the method, this is used when there's multiple declaration of one method.
+                                          * To find it, I increment it until it lands on the right one, though it was 0 this time */
+                            0,
+                            modDef, // The mod dll definition
+                            "CecilInjectPatches", // The class that holds the method you want to inject
+                            "SfxInfoPreload_Prefix", // The method you want to inject
+                                              /* There's a lot you can do with Flags, but the documentation went offline.
+                                               * You can still check the code, which is well documented, here: 
+                                               * https://github.com/ghorsington/Mono.Cecil.Inject/blob/master/Mono.Cecil.Inject/InjectFlags.cs */
+                            InjectFlags.PassInvokingInstance | InjectFlags.ModifyReturn
+                        );
+                        Console.WriteLine("-- Injecting into LLHandlers.AudioHandler.PlayMusic");
+                        asm.InjectCallToMethod(
+                            aDef, // The LLB dll definition
+                            "LLHandlers.VoiceInfo", // The class you want to inject stuff in
+                            "Preload", // The name of method you want to inject into
+                                       /* The ID of the method, this is used when there's multiple declaration of one method.
+                                        * To find it, I increment it until it lands on the right one, though it was 0 this time */
+                            0,
+                            modDef, // The mod dll definition
+                            "CecilInjectPatches", // The class that holds the method you want to inject
+                            "VoiceInfoPreload_Prefix", // The method you want to inject
+                                                     /* There's a lot you can do with Flags, but the documentation went offline.
+                                                      * You can still check the code, which is well documented, here: 
+                                                      * https://github.com/ghorsington/Mono.Cecil.Inject/blob/master/Mono.Cecil.Inject/InjectFlags.cs */
+                            InjectFlags.PassInvokingInstance | InjectFlags.ModifyReturn
                         );
                     }
                     catch (Exception e)

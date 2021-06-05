@@ -67,6 +67,8 @@
     <Compile Include="MusicHax.cs" />
     <Compile Include="CecilInjectPatches.cs" />
     <Compile Include="ModMenuIntegration.cs" />
+    <Compile Include="AudioCache.cs" />
+    <Compile Include="AudioUtils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
