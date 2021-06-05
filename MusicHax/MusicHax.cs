@@ -36,7 +36,17 @@ namespace MusicHax
             get
             {
                 if (MMI != null)
-                    return MMI.GetTrueFalse("(bool)enablePreloading");
+                    return MMI.GetTrueFalse(MMI.configBools["(bool)enablePreloading"]);
+                return true;
+            }
+        }
+
+        private static bool VanillaMusicEnabled
+        {
+            get
+            {
+                if (MMI != null)
+                    return MMI.GetTrueFalse(MMI.configBools["(bool)allowVanillaMusicToRandomlyPlay"]);
                 return true;
             }
         }
@@ -103,7 +113,7 @@ namespace MusicHax
 
             musicCache.Clear();
 
-            DirectoryInfo[] musicDirectories = Directory.CreateDirectory(Path.Combine(MHResourcesPath, "Music")).GetDirectories();
+            DirectoryInfo[] musicDirectories = Directory.CreateDirectory(MHResourcesPath).GetDirectories();
             foreach (DirectoryInfo musicDirectory in musicDirectories)
             {
                 foreach (AudioInfo musicInfo in AudioUtils.GetAudioInfos(musicDirectory))
@@ -177,12 +187,22 @@ namespace MusicHax
             directoryAlreadyCreated = true;
         }
 
-        public static AudioClip GetMusicClip(string clipName)
+        public static AudioClip GetMusicClip(AudioClip inputClip)
         {
+            string clipName = inputClip.name;
             Debug.Log("MusicHax: Got asked for a clip named: \"" + clipName + "\"");
+            int lowerBound = 0;
+            if (VanillaMusicEnabled) { lowerBound = -1; }
             if (PreloadingEnabled && musicCache.ContainsKey(clipName) && musicCache[clipName].Count > 0)
             {
-                return musicCache[clipName][UnityEngine.Random.Range(0, musicCache[clipName].Count)];
+                int roll = UnityEngine.Random.Range(lowerBound, musicCache[clipName].Count);
+                Debug.Log("MusicHax: PRELOADED. VanillaMusicEnabled = " + VanillaMusicEnabled + ", lowerBound = " + lowerBound + ", roll = " + roll);
+                if (roll == -1)
+                {
+                    Debug.Log("Returning input clip");
+                    return inputClip;
+                }
+                return musicCache[clipName][roll];
             }
             else
             {
@@ -191,7 +211,10 @@ namespace MusicHax
                     string[] pathList = Directory.GetFiles(Path.Combine(MHResourcesPath, clipName));
                     if (pathList.Length > 0)
                     {
-                        return AudioUtils.GetClipSynchronously(pathList[UnityEngine.Random.Range(0, pathList.Length - 1)]);
+                        int roll = UnityEngine.Random.Range(lowerBound, pathList.Length - 1);
+                        Debug.Log("MusicHax: NOPRELOAD. VanillaMusicEnabled = " + VanillaMusicEnabled + ", lowerBound = " + lowerBound + ", roll = " + roll);
+                        if (roll == -1) { return inputClip; }
+                        return AudioUtils.GetClipSynchronously(pathList[roll]);
                     }
                 } catch (Exception e)
                 {

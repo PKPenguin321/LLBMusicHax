@@ -8,7 +8,7 @@ namespace MusicHax
         public static bool PlayHaxedMusic(ref AudioClip clip, ref Vector2 pLoopData)
         {
             MusicHax.CreateMusicDirectory(clip.name);
-            AudioClip newClip = MusicHax.GetMusicClip(clip.name);
+            AudioClip newClip = MusicHax.GetMusicClip(clip);
             if (newClip != null)
             {
                 clip = newClip;
