@@ -11,7 +11,7 @@ using LLBML.Audio;
 namespace MusicHax
 {
     [BepInPlugin(PluginInfos.PLUGIN_ID, PluginInfos.PLUGIN_NAME, PluginInfos.PLUGIN_VERSION)]
-    [BepInDependency("fr.glomzubuk.plugins.llb.llbml", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency(LLBML.PluginInfos.PLUGIN_ID, BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("no.mrgentle.plugins.llb.modmenu", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInProcess("LLBlaze.exe")]
     public class MusicHax : BaseUnityPlugin
@@ -42,12 +42,7 @@ namespace MusicHax
 
         void Start()
         {
-            Logger.LogInfo("Searching ModMenu");
-            if (BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("no.mrgentle.plugins.llb.modmenu"))
-            {
-                Logger.LogInfo("Registering to ModMenu");
-                ModMenu.ModMenu.RegisterMod(this.Info);
-            }
+            LLBML.Utils.ModDependenciesUtils.RegisterToModMenu(this.Info);
 
             if (enablePreloading.Value)
             {
