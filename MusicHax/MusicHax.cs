@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using BepInEx;
 using BepInEx.Configuration;
@@ -20,11 +21,18 @@ namespace MusicHax
         //public static readonly string MHResourcesPath = Path.Combine(Path.Combine(Path.Combine(Application.dataPath, "Managed"), "MusicHaxResources");
         //public static readonly string MHResourcesPath = Path.Combine(BepInEx.Paths.ManagedPath, "MusicHaxResources");
         internal static DirectoryInfo MHResourcesDir { get; private set; } = null;
-        private static AudioCache musicCache = new AudioCache();
         internal static ManualLogSource Log { get; private set; } = null;
+
+        private static AudioCache musicCache = new AudioCache();
+        private static AudioCache sfxCache = new AudioCache();
+        private static AudioCache voiceCache = new AudioCache();
 
         private static ConfigEntry<bool> enablePreloading;
         private static ConfigEntry<bool> enableVanillaMusics;
+
+        private static DirectoryInfo SongsDirectory => Directory.CreateDirectory(Path.Combine(MHResourcesDir.FullName, "Songs"));
+        private static DirectoryInfo SFXDirectory => Directory.CreateDirectory(Path.Combine(MHResourcesDir.FullName, "SFX"));
+        private static DirectoryInfo VoicesDirectory => Directory.CreateDirectory(Path.Combine(MHResourcesDir.FullName, "Voices"));
 
         private readonly string loadingText = "MusicHax is loading External Songs...";
 
@@ -72,13 +80,52 @@ namespace MusicHax
         {
             musicCache.Clear();
 
-            DirectoryInfo[] musicDirectories = MHResourcesDir.GetDirectories();
+            DirectoryInfo[] musicDirectories = SongsDirectory.GetDirectories();
             foreach (DirectoryInfo musicDirectory in musicDirectories)
             {
                 foreach (AudioInfo musicInfo in AudioUtils.GetAudioInfos(musicDirectory))
                 {
                     Logger.LogDebug("Loading new " + musicDirectory.Name + " : " + musicInfo.file.FullName);
                     musicCache.LoadClip(musicDirectory.Name, musicInfo);
+                }
+            }
+        }
+
+        private void LoadSfx()
+        {
+            sfxCache.Clear();
+
+            DirectoryInfo[] sfxDirectories = SFXDirectory.GetDirectories();
+            foreach (DirectoryInfo sfxDirectory in sfxDirectories)
+            {
+                foreach (AudioInfo sfxInfo in AudioUtils.GetAudioInfos(sfxDirectory))
+                {
+                    Debug.Log("Loading new " + sfxDirectory.Name + " : " + sfxInfo.file.FullName);
+                    sfxCache.LoadClip(sfxDirectory.Name, sfxInfo);
+                }
+            }
+        }
+
+        private static string GetVoiceCacheKey(string audioFile, Character character)
+        {
+            return character.ToString() + "_" + audioFile;
+        }
+        private void LoadVoice()
+        {
+            voiceCache.Clear();
+
+            DirectoryInfo[] charDirectories = VoicesDirectory.GetDirectories();
+            foreach (DirectoryInfo charDirectory in charDirectories)
+            {
+                foreach (DirectoryInfo voiceDirectory in charDirectory.GetDirectories())
+                {
+                    foreach (AudioInfo voiceInfo in AudioUtils.GetAudioInfos(voiceDirectory))
+                    {
+                        Debug.Log("Loading new " + voiceDirectory.Name + " : " + voiceInfo.file.FullName);
+
+                        string cacheKey = GetVoiceCacheKey(voiceDirectory.Name, CharacterApi.GetCharacterByName(charDirectory.Name));
+                        voiceCache.LoadClip(cacheKey, voiceInfo);
+                    }
                 }
             }
         }
@@ -99,7 +146,7 @@ namespace MusicHax
             if (directoryAlreadyCreated) return;
             for (int i = 1; i < (int)AudioTrack.MAX; i++)
             {
-                if (i == 13) continue; // For some reason, that number is missing from the Enum
+                if (i == 13) continue; // For some reason, that number is missing from the Enum 
                 string directoryname = DNPFJHMAIBP.AKGAOAEJ.musicAssetLinks.GetMusicAsset((AudioTrack)i).audioClipName;
                 this.Logger.LogDebug("Creating directory: " + directoryname);
                 Directory.CreateDirectory(Path.Combine(MHResourcesDir.FullName, directoryname));
@@ -137,6 +184,32 @@ namespace MusicHax
         {
             return GetAudioAssetFor(clipName).audioClip;
         }
-        //TODO remake sfx and voice
+
+        public static AudioClip[] GetSfxClips(string audioFile)
+        {
+            Log.LogDebug("MusicHax: Got asked for a sfx clip named: \"" + audioFile + "\"");
+
+            Directory.CreateDirectory(Path.Combine(SFXDirectory.FullName, audioFile));
+
+            if (sfxCache.ContainsKey(audioFile) && sfxCache[audioFile].Count > 0)
+            {
+                return sfxCache[audioFile].ConvertAll<AudioClip>((AudioAsset input) => input.audioClip).ToArray();
+            }
+            return null;
+        }
+
+        public static AudioClip[] GetVoiceClips(string audioFile, Character character)
+        {
+            Log.LogDebug("MusicHax: Got asked for a voice clip named: \"" + audioFile + "\" for " + character.ToString());
+
+            Directory.CreateDirectory(Path.Combine(Path.Combine(VoicesDirectory.FullName, character.ToString()), audioFile));
+
+            string cacheKey = GetVoiceCacheKey(audioFile, character);
+            if (voiceCache.ContainsKey(cacheKey) && voiceCache[cacheKey].Count > 0)
+            {
+                return voiceCache[cacheKey].ConvertAll<AudioClip>((AudioAsset input) => input.audioClip).ToArray();
+            }
+            return null;
+        }
     }
 }

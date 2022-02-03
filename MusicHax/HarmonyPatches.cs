@@ -21,48 +21,45 @@ namespace MusicHax
             }
             return true;
         }
-        /*
-        public static bool SfxInfoPreload_Prefix(SfxInfo __instance, out bool __result)
+
+        public static bool SfxInfoPreload_Prefix(SfxInfo __instance, ref bool __result)
         {
             if (__instance.isLoaded)
             {
                 __result = false;
-                return true;
+                return false;
             }
 
             AudioClip[] clips = MusicHax.GetSfxClips(__instance.audioFile);
-            if (clips.Length > 0)
+            if (clips != null)
             {
                 __instance.audioClips = clips;
                 __instance.isLoaded = true;
 
                 __result = true;
-                return true;
+                return false;
             }
-            __result = false;
-            return false;
+            return true;
         }
 
-        public static bool VoiceInfoPreload_Prefix(VoiceInfo __instance, out bool __result)
+        public static bool VoiceInfoPreload_Prefix(VoiceInfo __instance, ref bool __result)
         {
             if (__instance.isLoaded)
             {
                 __result = false;
-                return true;
+                return false;
             }
 
             AudioClip[] clips = MusicHax.GetVoiceClips(__instance.audioFile, __instance.character);
-            if (clips.Length > 0)
+            if (clips != null)
             {
                 __instance.audioClips = clips;
                 __instance.isLoaded = true;
 
                 __result = true;
-                return true;
+                return false;
             }
-            __result = false;
-            return false;
+            return true;
         }
-        */
     }
 }
