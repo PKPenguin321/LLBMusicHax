@@ -22,6 +22,9 @@ namespace MusicHax
             return true;
         }
 
+
+        [HarmonyPatch(typeof(SfxInfo), nameof(SfxInfo.Preload))]
+        [HarmonyPrefix]
         public static bool SfxInfoPreload_Prefix(SfxInfo __instance, ref bool __result)
         {
             if (__instance.isLoaded)
@@ -42,6 +45,10 @@ namespace MusicHax
             return true;
         }
 
+
+
+        [HarmonyPatch(typeof(VoiceInfo), nameof(VoiceInfo.Preload))]
+        [HarmonyPrefix]
         public static bool VoiceInfoPreload_Prefix(VoiceInfo __instance, ref bool __result)
         {
             if (__instance.isLoaded)

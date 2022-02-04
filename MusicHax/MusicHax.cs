@@ -139,7 +139,7 @@ namespace MusicHax
 
         public static void CreateMusicDirectory(string clipName)
         {
-            Directory.CreateDirectory(Path.Combine(MHResourcesDir.FullName, clipName));
+            Directory.CreateDirectory(Path.Combine(SongsDirectory.FullName, clipName));
         }
 
         private bool directoryAlreadyCreated = false;
