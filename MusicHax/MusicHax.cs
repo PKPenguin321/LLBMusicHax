@@ -151,7 +151,7 @@ namespace MusicHax
                 if (i == 13) continue; // For some reason, that number is missing from the Enum 
                 string directoryname = DNPFJHMAIBP.AKGAOAEJ.musicAssetLinks.GetMusicAsset((AudioTrack)i).audioClipName;
                 this.Logger.LogDebug("Creating directory: " + directoryname);
-                Directory.CreateDirectory(Path.Combine(MHResourcesDir.FullName, directoryname));
+                Directory.CreateDirectory(Path.Combine(SongsDirectory.FullName, directoryname));
             }
             directoryAlreadyCreated = true;
         }
@@ -168,7 +168,7 @@ namespace MusicHax
             {
                 try
                 {
-                    string[] pathList = Directory.GetFiles(Path.Combine(MHResourcesDir.FullName, clipName));
+                    string[] pathList = Directory.GetFiles(Path.Combine(SongsDirectory.FullName, clipName));
                     if (pathList.Length > 0)
                     {
                         return AudioUtils.GetAssetSynchronously(pathList[UnityEngine.Random.Range(0, pathList.Length - 1)]);
