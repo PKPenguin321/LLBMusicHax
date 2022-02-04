@@ -62,6 +62,8 @@ namespace MusicHax
             {
                 LoadingScreen.SetLoading(this.Info, true, loadingText);
                 LoadMusics();
+                LoadSfx();
+                LoadVoice();
                 LoadingScreen.SetLoading(this.Info, false); //TODO doesn' t work, this is async
             }
         }
