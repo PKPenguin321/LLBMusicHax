@@ -47,7 +47,7 @@ namespace MusicHax
             harmoInstance.PatchAll(typeof(PlayMusicPatch));
 
 
-            enablePreloading = this.Config.Bind<bool>("Toggles", "EnablePreloading", false);
+            enablePreloading = this.Config.Bind<bool>("Toggles", "EnablePreloading", true);
             enableVanillaMusics = this.Config.Bind<bool>("Toggles", "EnableVanillaMusics", false);
         }
 
@@ -60,11 +60,11 @@ namespace MusicHax
 
             if (enablePreloading.Value)
             {
-                LoadingScreen.SetLoading(this.Info, true, loadingText);
+                //LoadingScreen.SetLoading(this.Info, true, loadingText);
                 LoadMusics();
                 LoadSfx();
                 LoadVoice();
-                LoadingScreen.SetLoading(this.Info, false); //TODO doesn' t work, this is async
+                //LoadingScreen.SetLoading(this.Info, false); //TODO doesn' t work, this is async
             }
         }
 
@@ -102,7 +102,7 @@ namespace MusicHax
             {
                 foreach (AudioInfo sfxInfo in AudioUtils.GetAudioInfos(sfxDirectory))
                 {
-                    Debug.Log("Loading new " + sfxDirectory.Name + " : " + sfxInfo.file.FullName);
+                    Logger.LogDebug("Loading new " + sfxDirectory.Name + " : " + sfxInfo.file.FullName);
                     sfxCache.LoadClip(sfxDirectory.Name, sfxInfo);
                 }
             }
@@ -123,7 +123,7 @@ namespace MusicHax
                 {
                     foreach (AudioInfo voiceInfo in AudioUtils.GetAudioInfos(voiceDirectory))
                     {
-                        Debug.Log("Loading new " + voiceDirectory.Name + " : " + voiceInfo.file.FullName);
+                        Logger.LogDebug("Loading new " + voiceDirectory.Name + " : " + voiceInfo.file.FullName);
 
                         string cacheKey = GetVoiceCacheKey(voiceDirectory.Name, CharacterApi.GetCharacterByName(charDirectory.Name));
                         voiceCache.LoadClip(cacheKey, voiceInfo);
@@ -158,11 +158,26 @@ namespace MusicHax
 
         public static AudioAsset GetAudioAssetFor(string clipName)
         {
-            Log.LogDebug("Got asked for a clip named: \"" + clipName + "\"");
-            if (enablePreloading.Value && musicCache.ContainsKey(clipName) && musicCache[clipName].Count > 0)
+            Log.LogDebug($"Got asked for a clip named: \"{clipName}\"");
+            if (enablePreloading.Value && musicCache.ContainsKey(clipName))
             {
-                Log.LogDebug("Preloading: key exists : \"" + clipName + "\" | Found list lenght: " + musicCache[clipName].Count);
-                return musicCache[clipName][UnityEngine.Random.Range(0, musicCache[clipName].Count)];
+                int musicCount = musicCache[clipName].Count;
+                Log.LogDebug($"Preloading: key exists : \"{clipName}\" | Found list length: {musicCache[clipName].Count}");
+                if (enableVanillaMusics.Value)
+                {
+                    musicCount += 1;
+                }
+                if (musicCount > 0)
+                {
+                    int musicIndex = UnityEngine.Random.Range(0, musicCount);
+                    if (enableVanillaMusics.Value)
+                    {
+                        musicIndex -= 1;
+                    }
+                    Log.LogDebug($"Rolled {musicIndex} out of {musicCount}");
+                    if (musicIndex < 0) return null;
+                    else return musicCache[clipName][musicIndex];
+                }
             }
             else
             {
@@ -178,8 +193,8 @@ namespace MusicHax
                 {
                     Log.LogError("MusicHax: Exception caught:\n"+ e.Message);
                 }
-                return null;
             }
+            return null;
         }
 
         public static AudioClip GetAudioClipFor(string clipName)
