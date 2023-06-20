@@ -33,7 +33,10 @@ namespace MusicHax
 
             if (audioAsset?.audioClip == null)
             {
-                MusicHax.currentInfo = default(AudioInfo);
+                MusicHax.currentInfo = new AudioInfo
+                {
+                    volume = 1
+                };
                 return true;
             }
             else
