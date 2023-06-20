@@ -31,7 +31,15 @@ namespace MusicHax
             MusicHax.CreateMusicDirectory(clip.name);
             AudioAsset audioAsset = MusicHax.GetAudioAssetFor(clip.name);
 
-            if (audioAsset?.audioClip == null) return true;
+            if (audioAsset?.audioClip == null)
+            {
+                MusicHax.currentInfo = default(AudioInfo);
+                return true;
+            }
+            else
+            {
+                MusicHax.currentInfo = audioAsset.audioInfo;
+            }
 
             clip = audioAsset.audioClip;
             pLoopData = audioAsset.audioInfo.loopData;
@@ -71,10 +79,17 @@ namespace MusicHax
             {
                 AudioHandler.audioSourceMusic1.Play();
             }
+            AudioHandler.SetMusicLoudness(audioAsset.audioInfo.volume);
             return false;
         }
 
-
+        [HarmonyPatch(typeof(LLHandlers.AudioHandler), nameof(LLHandlers.AudioHandler.SetMusicLoudness))]
+        [HarmonyPrefix]
+        public static bool SetMusicLoudnessPrefix(ref float f)
+        {
+            f = f * MusicHax.currentInfo.volume;
+            return true;
+        }
 
         [HarmonyPatch(typeof(LLHandlers.AudioHandler), nameof(LLHandlers.AudioHandler.Update))]
         [HarmonyPrefix]

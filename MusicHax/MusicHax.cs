@@ -22,6 +22,7 @@ namespace MusicHax
         //public static readonly string MHResourcesPath = Path.Combine(BepInEx.Paths.ManagedPath, "MusicHaxResources");
         internal static DirectoryInfo MHResourcesDir { get; private set; } = null;
         internal static ManualLogSource Log { get; private set; } = null;
+        internal static AudioInfo currentInfo;
 
         private static AudioCache musicCache = new AudioCache();
         private static AudioCache sfxCache = new AudioCache();
