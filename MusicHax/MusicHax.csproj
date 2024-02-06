@@ -70,9 +70,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MusicHax.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PluginInfos.cs" />
     <Compile Include="HarmonyPatches.cs" />
+    <Compile Include="FileStructure.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

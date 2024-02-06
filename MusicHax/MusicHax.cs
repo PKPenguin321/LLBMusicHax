@@ -8,6 +8,7 @@ using HarmonyLib;
 using LLHandlers;
 using LLBML;
 using LLBML.Audio;
+using LLBML.Utils;
 using BepInEx.Logging;
 
 namespace MusicHax
@@ -31,9 +32,9 @@ namespace MusicHax
         private static ConfigEntry<bool> enablePreloading;
         private static ConfigEntry<bool> enableVanillaMusics;
 
-        private static DirectoryInfo SongsDirectory => Directory.CreateDirectory(Path.Combine(MHResourcesDir.FullName, "Songs"));
-        private static DirectoryInfo SFXDirectory => Directory.CreateDirectory(Path.Combine(MHResourcesDir.FullName, "SFX"));
-        private static DirectoryInfo VoicesDirectory => Directory.CreateDirectory(Path.Combine(MHResourcesDir.FullName, "Voices"));
+        private static DirectoryInfo SongsDirectory;
+        private static DirectoryInfo SFXDirectory;
+        private static DirectoryInfo VoicesDirectory;
 
         private readonly string loadingText = "MusicHax is loading External Songs...";
 
@@ -42,6 +43,7 @@ namespace MusicHax
         {
             Log = this.Logger;
             Logger.LogInfo("Hello, world!");
+            MHResourcesDir = LLBML.Utils.ModdingFolder.GetModSubFolder(this.Info);
 
             var harmoInstance = new Harmony(PluginInfos.PLUGIN_ID);
             Logger.LogDebug("Patching AudioHandler");
@@ -50,13 +52,11 @@ namespace MusicHax
 
             enablePreloading = this.Config.Bind<bool>("Toggles", "EnablePreloading", true);
             enableVanillaMusics = this.Config.Bind<bool>("Toggles", "EnableVanillaMusics", false);
+            CreateDirectoryStructure();
         }
 
         void Start()
         {
-            MHResourcesDir = LLBML.Utils.ModdingFolder.GetModSubFolder(this.Info);
-            MHResourcesDir.Create();
-
             LLBML.Utils.ModDependenciesUtils.RegisterToModMenu(this.Info);
 
             if (enablePreloading.Value)
@@ -72,11 +72,12 @@ namespace MusicHax
 
         void Update()
         {
+            /*
             if (DNPFJHMAIBP.AKGAOAEJ != null && DNPFJHMAIBP.AKGAOAEJ.musicAssetLinks != null)
             {
                 CreateMusicDirectories();
             }
-
+            */
         }
 
         private void LoadMusics()
@@ -136,6 +137,31 @@ namespace MusicHax
         private void ReloadMusics()
         {
             LoadMusics();
+        }
+
+
+
+        public static void CreateDirectoryStructure()
+        {
+            SongsDirectory = MHResourcesDir.CreateSubdirectory("Songs");
+            foreach( string dir in FileStructure.Songs)
+            {
+                SongsDirectory.CreateSubdirectory(dir);
+            }
+            SFXDirectory = MHResourcesDir.CreateSubdirectory("SFX");
+            foreach (string dir in FileStructure.SFX)
+            {
+                SFXDirectory.CreateSubdirectory(dir);
+            }
+            VoicesDirectory = MHResourcesDir.CreateSubdirectory("Voices");
+            foreach(Character character in CharacterApi.GetPlayableCharacters())
+            {
+                var charDir = VoicesDirectory.CreateSubdirectory(character.ToString());
+                foreach (string dir in FileStructure.Voices)
+                {
+                    charDir.CreateSubdirectory(character.ToString().ToLower() + dir);
+                }
+            }
         }
 
         public static void CreateMusicDirectory(string clipName)
